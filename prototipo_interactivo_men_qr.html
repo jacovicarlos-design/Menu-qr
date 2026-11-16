@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MenúQR - Plataforma de Franquicias y Pagos</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- QRCode.js para generación real de códigos QR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Animación de láser para el escáner QR */
+        @keyframes scanLine {
+            0% { top: 8%; opacity: 0.3; }
+            50% { top: 88%; opacity: 1; }
+            100% { top: 8%; opacity: 0.3; }
+        }
+        .animate-scan {
+            animation: scanLine 2.4s ease-in-out infinite;
+        }
+
+        /* Ocultar barra de scroll pero permitir desplazamiento */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Transiciones suaves */
+        .fade-in {
+            animation: fadeIn 0.25s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center sm:p-4 bg-gradient-to-br from-stone-900 via-neutral-900 to-stone-950">
+
+    <!-- Contenedor tipo App Móvil -->
+    <div id="app-shell" class="w-full sm:w-[415px] h-screen sm:h-[840px] bg-stone-50 sm:rounded-[38px] sm:border-[8px] sm:border-neutral-800 shadow-2xl flex flex-col overflow-hidden relative">
+
+        <!-- Notificación Toast Flotante -->
+        <div id="toast" class="fixed sm:absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-neutral-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none whitespace-nowrap">
+            <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+            <span id="toast-msg">¡Acción completada!</span>
+        </div>
+
+        <!-- Modal de Upgrade a Franquicia PRO & Descarga Play Store -->
+        <div id="pro-modal" class="hidden fixed sm:absolute inset-0 z-50 bg-neutral-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 fade-in">
+            <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-amber-300/60">
+                <div class="bg-gradient-to-br from-neutral-950 via-neutral-900 to-amber-950 p-5 text-white relative">
+                    <button onclick="closeProModal()" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                    <span class="inline-flex items-center gap-1 bg-amber-400 text-neutral-950 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full">
+                        <i data-lucide="crown" class="w-3 h-3"></i> Licencia Comercial
+                    </span>
+                    <h3 class="text-xl font-extrabold mt-2 leading-tight">MenúQR <span class="text-amber-400">Franquicia PRO</span></h3>
+                    <p class="text-xs text-stone-300 mt-1">Convierte cada mesa en un canal de ventas automático y escala tus sucursales.</p>
+                </div>
+                <div class="p-5 space-y-3">
+                    <div class="space-y-2.5 text-xs">
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check" class="w-3.5 h-3.5"></i></div>
+                            <div><strong class="text-neutral-900">Multi-sucursal Ilimitada:</strong> <span class="text-stone-600">Gestiona todas tus sedes desde un solo panel central.</span></div>
+                        </div>
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check" class="w-3.5 h-3.5"></i></div>
+                            <div><strong class="text-neutral-900">Pedidos Directos a WhatsApp:</strong> <span class="text-stone-600">Recibe la orden detallada y el método de pago en tu chat.</span></div>
+                        </div>
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check" class="w-3.5 h-3.5"></i></div>
+                            <div><strong class="text-neutral-900">Tasa Dual Automática (USD / Bs.):</strong> <span class="text-stone-600">Actualiza la tasa del día y recalcula todo el menú al instante.</span></div>
+                        </div>
+                        <div class="flex items-start gap-2.5">
+                            <div class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 mt-0.5"><i data-lucide="check" class="w-3.5 h-3.5"></i></div>
+                            <div><strong class="text-neutral-900">Tarjetones QR HD + Analíticas:</strong> <span class="text-stone-600">Descarga QR sin marca de agua y mide tus platos estrella.</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3 flex items-center justify-between">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase text-amber-800 block">Suscripción Franquicia</span>
+                            <span class="text-lg font-extrabold text-neutral-900">$29.99 <span class="text-xs font-normal text-stone-500">/mes por sede</span></span>
+                        </div>
+                        <span class="text-[10px] font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-lg">7 días gratis</span>
+                    </div>
+
+                    <button onclick="activateProPlan()" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-extrabold text-xs py-3.5 rounded-xl shadow-lg shadow-orange-500/25 flex items-center justify-center gap-2">
+                        <i data-lucide="crown" class="w-4 h-4"></i> Activar Demo Franquicia PRO Ahora
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal Viral Google Play Store -->
+        <div id="playstore-modal" class="hidden fixed sm:absolute inset-0 z-50 bg-neutral-950/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-3 fade-in">
+            <div class="bg-white w-full max-w-sm rounded-3xl overflow-hidden shadow-2xl border border-stone-200">
+                <div class="bg-neutral-900 p-5 text-white relative">
+                    <button onclick="closePlayStoreModal()" class="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-400 flex items-center justify-center shadow-lg shrink-0">
+                            <i data-lucide="qr-code" class="w-7 h-7 text-white"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Disponible en Android</span>
+                            <h3 class="text-base font-extrabold leading-tight">MenúQR - Franquicias & Pagos</h3>
+                            <div class="flex items-center gap-1 text-[11px] text-amber-400 mt-0.5">
+                                <span>★★★★★</span> <span class="text-stone-400">(4.9 • +10K descargas)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-5 space-y-3 text-xs">
+                    <p class="text-stone-600 leading-relaxed">
+                        Escanea menús al instante, guarda tus restaurantes favoritos y digitaliza tu propio negocio en menos de 2 minutos desde tu celular.
+                    </p>
+                    <div class="bg-stone-100 p-2.5 rounded-xl border border-stone-200 flex items-center justify-between gap-2">
+                        <span class="font-mono text-[10px] text-neutral-700 truncate">https://play.google.com/store/apps/details?id=com.menuqr.app</span>
+                        <button onclick="copyText('https://play.google.com/store/apps/details?id=com.menuqr.app', 'Enlace de Play Store')" class="bg-neutral-900 text-white text-[10px] font-bold px-2.5 py-1.5 rounded-lg shrink-0">
+                            Copiar
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-1">
+                        <button onclick="shareViralPlayStore()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5">
+                            <i data-lucide="share-2" class="w-4 h-4"></i> Compartir App
+                        </button>
+                        <button onclick="closePlayStoreModal(); switchRole('owner');" class="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold py-3 px-3 rounded-xl flex items-center justify-center gap-1.5">
+                            <i data-lucide="store" class="w-4 h-4"></i> Crear mi Menú
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Superior Fijo -->
+        <header class="bg-neutral-900 text-white px-4 pt-4 pb-3 shadow-md z-20 shrink-0">
+            <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center shadow">
+                        <i data-lucide="qr-code" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="font-extrabold text-base tracking-tight leading-none">Menú<span class="text-amber-400">QR</span></h1>
+                        <p class="text-[10px] text-stone-400 font-medium">Red de Franquicias</p>
+                    </div>
+                </div>
+
+                <!-- Selector Rápido de Rol -->
+                <div class="bg-neutral-800 p-1 rounded-full flex items-center border border-neutral-700">
+                    <button id="btn-role-customer" onclick="switchRole('customer')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all bg-amber-500 text-neutral-950 shadow-sm">
+                        Cliente
+                    </button>
+                    <button id="btn-role-owner" onclick="switchRole('owner')" class="px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all text-stone-300 hover:text-white">
+                        Dueño
+                    </button>
+                </div>
+            </div>
+
+            <!-- Barra de Sucursal Activa -->
+            <div class="flex items-center justify-between bg-neutral-800/90 px-3 py-1.5 rounded-xl border border-neutral-700/70">
+                <div class="flex items-center gap-2 overflow-hidden">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 shrink-0 animate-pulse"></span>
+                    <span id="header-branch-name" class="text-xs font-semibold text-stone-100 truncate">Burger House - Centro</span>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0 ml-2">
+                    <span id="header-pro-pill" class="hidden text-[9px] uppercase tracking-wider font-extrabold bg-gradient-to-r from-amber-400 to-orange-500 text-neutral-950 px-2 py-0.5 rounded-full">PRO 👑</span>
+                    <span id="header-role-badge" class="text-[10px] uppercase tracking-wider font-bold text-amber-400">Vista Cliente</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Área Principal de Contenido (Scrollable) -->
+        <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar pb-24 bg-stone-50">
+            <!-- El contenido se inyecta dinámicamente según el rol y la pestaña -->
+        </main>
+
+        <!-- Barra de Navegación Inferior (Solo visible en Modo Cliente) -->
+        <nav id="customer-nav" class="bg-white border-t border-stone-200 px-2 py-2 flex items-center justify-around shrink-0 z-20 shadow-[0_-4px_12px_rgba(0,0,0,0.04)]">
+            <button onclick="switchTab('scan')" data-tab="scan" class="nav-btn flex flex-col items-center justify-center w-1/4 py-1 rounded-xl text-amber-600 font-semibold transition-colors">
+                <i data-lucide="scan-line" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[10px]">Escanear</span>
+            </button>
+            <button onclick="switchTab('menu')" data-tab="menu" class="nav-btn flex flex-col items-center justify-center w-1/4 py-1 rounded-xl text-stone-400 hover:text-stone-700 font-medium transition-colors relative">
+                <i data-lucide="utensils" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[10px]">Menú</span>
+                <span id="cart-badge" class="hidden absolute top-0.5 right-4 bg-orange-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+            </button>
+            <button onclick="switchTab('pay')" data-tab="pay" class="nav-btn flex flex-col items-center justify-center w-1/4 py-1 rounded-xl text-stone-400 hover:text-stone-700 font-medium transition-colors">
+                <i data-lucide="wallet" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[10px]">Pagar</span>
+            </button>
+            <button onclick="switchTab('branches')" data-tab="branches" class="nav-btn flex flex-col items-center justify-center w-1/4 py-1 rounded-xl text-stone-400 hover:text-stone-700 font-medium transition-colors">
+                <i data-lucide="store" class="w-5 h-5 mb-0.5"></i>
+                <span class="text-[10px]">Sucursales</span>
+            </button>
+        </nav>
+
+    </div>
+
+    <!-- Lógica de la Aplicación -->
+    <script>
+        // --- DATOS INICIALES DE LA RED DE FRANQUICIAS ---
+        const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.menuqr.app';
+
+        const DEFAULT_DATA = {
+            isPro: false,
+            exchangeRate: 46.50,
+            showDualCurrency: true,
+            activeBranchId: 'b1',
+            branches: [
+                {
+                    id: 'b1',
+                    name: 'Burger House - Centro',
+                    category: 'Hamburguesas Artesanales',
+                    address: 'Av. Bolívar, Edif. Plaza, Local 4',
+                    hours: '11:30 AM - 10:30 PM',
+                    whatsapp: '584142894510',
+                    brandColor: '#ea580c',
+                    isOpen: true,
+                    tableCode: 'MESA-07',
+                    stats: { scansToday: 148, topDish: 'Doble Smash Clásica', payClicks: 94 },
+                    payments: {
+                        pagoMovil: {
+                            bank: 'Banesco (0134)',
+                            idNumber: 'J-40982145-0',
+                            phone: '0414-2894510'
+                        },
+                        transfer: {
+                            bank: 'Banco Mercantil',
+                            account: '0105-0082-11-1082948120',
+                            holder: 'Inversiones Burger House C.A.',
+                            rif: 'J-40982145-0'
+                        },
+                        zelle: {
+                            email: 'pagos@burgerhouseve.com',
+                            holder: 'Burger House LLC'
+                        }
+                    },
+                    menu: [
+                        { id: 'm1', name: 'Doble Smash Clásica', category: 'Platos Fuertes', price: 8.50, desc: 'Doble carne smash, queso cheddar fundido, pepinillos y salsa secreta de la casa.', emoji: '🍔', available: true },
+                        { id: 'm2', name: 'Tequeños de Queso Blanco (6 und)', category: 'Entradas', price: 4.00, desc: 'Crujientes por fuera, full queso llanero derretido por dentro con salsa tártara.', emoji: '🧀', available: true },
+                        { id: 'm3', name: 'Papas Trufadas con Parmesano', category: 'Entradas', price: 4.50, desc: 'Papas fritas rústicas bañadas en aceite de trufa y queso parmesano rallado.', emoji: '🍟', available: true },
+                        { id: 'm4', name: 'Crispy Chicken Honey Mustard', category: 'Platos Fuertes', price: 7.80, desc: 'Pechuga de pollo extra crujiente, ensalada coleslaw y aderezo miel mostaza.', emoji: '🍗', available: true },
+                        { id: 'm5', name: 'Papelón con Limón Frappé', category: 'Bebidas', price: 2.50, desc: 'Refrescante bebida tradicional granizada con toque de limón fresco.', emoji: '🍋', available: true },
+                        { id: 'm6', name: 'Brownie con Helado de Mantecado', category: 'Postres', price: 4.20, desc: 'Brownie tibio de chocolate oscuro acompañado de bola de helado y sirope.', emoji: '🍫', available: true }
+                    ]
+                },
+                {
+                    id: 'b2',
+                    name: 'Sushi Express - Las Mercedes',
+                    category: 'Comida Japonesa & Poke',
+                    address: 'Calle París, C.C. Paseo, Nivel PB',
+                    hours: '12:00 PM - 11:00 PM',
+                    whatsapp: '584241928374',
+                    brandColor: '#059669',
+                    isOpen: true,
+                    tableCode: 'BARRA-03',
+                    stats: { scansToday: 212, topDish: 'Roll Dinamita Especial', payClicks: 163 },
+                    payments: {
+                        pagoMovil: {
+                            bank: 'Banco de Venezuela (0102)',
+                            idNumber: 'J-50129384-2',
+                            phone: '0424-1928374'
+                        },
+                        transfer: {
+                            bank: 'Banesco',
+                            account: '0134-0341-22-3411092834',
+                            holder: 'Grupo Gastronómico Orión C.A.',
+                            rif: 'J-50129384-2'
+                        },
+                        zelle: {
+                            email: 'sushiexpress.ccs@gmail.com',
+                            holder: 'Orion Food Group'
+                        }
+                    },
+                    menu: [
+                        { id: 's1', name: 'Roll Dinamita Especial (10 pzas)', category: 'Platos Fuertes', price: 11.00, desc: 'Salmón fresco, aguacate, queso crema, coronado con ensalada dinamita y anguila.', emoji: '🍣', available: true },
+                        { id: 's2', name: 'Gyozas de Cerdo y Vegetales', category: 'Entradas', price: 5.50, desc: '5 empanaditas japonesas selladas a la plancha con salsa ponzu.', emoji: '🥟', available: true },
+                        { id: 's3', name: 'Poke Bowl Salmón & Mango', category: 'Platos Fuertes', price: 10.50, desc: 'Base de arroz de sushi, salmón marinado, mango, edamame y ajonjolí tostado.', emoji: '🥗', available: true },
+                        { id: 's4', name: 'Té Helado Matcha & Durazno', category: 'Bebidas', price: 3.00, desc: 'Infusión fría de té verde japonés con esencia natural de durazno.', emoji: '🍵', available: true }
+                    ]
+                },
+                {
+                    id: 'b3',
+                    name: 'Café Aroma - Plaza Bolívar',
+                    category: 'Cafetería & Pastelería',
+                    address: 'Frente a la Plaza Bolívar, Esq. Norte',
+                    hours: '07:30 AM - 08:00 PM',
+                    whatsapp: '584129081726',
+                    brandColor: '#d97706',
+                    isOpen: false,
+                    tableCode: 'TERRAZA-02',
+                    stats: { scansToday: 89, topDish: 'Cappuccino Venezolano', payClicks: 61 },
+                    payments: {
+                        pagoMovil: {
+                            bank: 'Bancamiga (0172)',
+                            idNumber: 'J-31209482-9',
+                            phone: '0412-9081726'
+                        },
+                        transfer: {
+                            bank: 'Bancamiga',
+                            account: '0172-0110-44-1104928371',
+                            holder: 'Café Aroma Artesanal C.A.',
+                            rif: 'J-31209482-9'
+                        },
+                        zelle: {
+                            email: 'admin@cafearoma.net',
+                            holder: 'Aroma Coffee Roasters'
+                        }
+                    },
+                    menu: [
+                        { id: 'c1', name: 'Cappuccino Venezolano Grande', category: 'Bebidas', price: 3.20, desc: 'Café de especialidad 100% arábica de Caripe con leche texturizada.', emoji: '☕', available: true },
+                        { id: 'c2', name: 'Croissant de Almendras', category: 'Postres', price: 3.80, desc: 'Hojaldre francés recién horneado relleno de crema de almendras.', emoji: '🥐', available: true },
+                        { id: 'c3', name: 'Sándwich Ciabatta Capresa', category: 'Platos Fuertes', price: 6.50, desc: 'Pan artesanal, queso mozzarella fresco, tomate confitado y pesto genovés.', emoji: '🥪', available: true }
+                    ]
+                }
+            ]
+        };
+
+        // --- ESTADO GLOBAL DE LA APP ---
+        let state = {
+            role: 'customer', // 'customer' | 'owner'
+            activeTab: 'scan', // 'scan' | 'menu' | 'pay' | 'branches'
+            ownerTab: 'menu', // 'menu' | 'qr' | 'pro'
+            qrTable: 'Mesa 01',
+            qrStyle: 'card', // 'standard' | 'card'
+            selectedCategory: 'Todos',
+            cart: {}, // { itemId: quantity }
+            data: loadAppData()
+        };
+
+        function loadAppData() {
+            try {
+                const saved = localStorage.getItem('menuqr_prototype_v2_pro');
+                if (saved) return JSON.parse(saved);
+            } catch (e) {
+                console.warn('No se pudo cargar localStorage:', e);
+            }
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+
+        function saveAppData() {
+            try {
+                localStorage.setItem('menuqr_prototype_v2_pro', JSON.stringify(state.data));
+            } catch (e) {
+                console.warn('No se pudo guardar en localStorage:', e);
+            }
+        }
+
+        function getActiveBranch() {
+            return state.data.branches.find(b => b.id === state.data.activeBranchId) || state.data.branches[0];
+        }
+
+        // --- UTILIDADES UI ---
+        let toastTimeout;
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-msg');
+            toastMsg.textContent = message;
+            toast.classList.remove('opacity-0', '-translate-y-2');
+            toast.classList.add('opacity-100', 'translate-y-0');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.add('opacity-0', '-translate-y-2');
+                toast.classList.remove('opacity-100', 'translate-y-0');
+            }, 2400);
+        }
+
+        function copyText(text, label) {
+            const tempInput = document.createElement('textarea');
+            tempInput.value = text;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                showToast(`¡${label} copiado!`);
+            } catch (err) {
+                showToast('No se pudo copiar el texto');
+            }
+            document.body.removeChild(tempInput);
+        }
+
+        function updateHeaderAndNav() {
+            const branch = getActiveBranch();
+            document.getElementById('header-branch-name').textContent = branch.name;
+
+            const btnCustomer = document.getElementById('btn-role-customer');
+            const btnOwner = document.getElementById('btn-role-owner');
+            const roleBadge = document.getElementById('header-role-badge');
+            const proPill = document.getElementById('header-pro-pill');
+            const nav = document.getElementById('customer-nav');
+
+            if (state.data.isPro) {
+                proPill.classList.remove('hidden');
+            } else {
+                proPill.classList.add('hidden');
+            }
+
+            if (state.role === 'customer') {
+                btnCustomer.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all bg-amber-500 text-neutral-950 shadow-sm';
+                btnOwner.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all text-stone-300 hover:text-white';
+                roleBadge.textContent = 'Vista Cliente';
+                roleBadge.className = 'text-[10px] uppercase tracking-wider font-bold text-amber-400 shrink-0';
+                nav.classList.remove('hidden');
+            } else {
+                btnOwner.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all bg-emerald-500 text-neutral-950 shadow-sm';
+                btnCustomer.className = 'px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all text-stone-300 hover:text-white';
+                roleBadge.textContent = 'Panel Franquicia';
+                roleBadge.className = 'text-[10px] uppercase tracking-wider font-bold text-emerald-400 shrink-0';
+                nav.classList.add('hidden');
+            }
+
+            // Actualizar botones de pestaña inferior
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const tab = btn.getAttribute('data-tab');
+                if (tab === state.activeTab) {
+                    btn.classList.remove('text-stone-400', 'font-medium');
+                    btn.classList.add('text-amber-600', 'font-semibold');
+                } else {
+                    btn.classList.add('text-stone-400', 'font-medium');
+                    btn.classList.remove('text-amber-600', 'font-semibold');
+                }
+            });
+
+            // Badge del carrito
+            const totalItems = Object.values(state.cart).reduce((acc, qty) => acc + qty, 0);
+            const cartBadge = document.getElementById('cart-badge');
+            if (totalItems > 0) {
+                cartBadge.textContent = totalItems;
+                cartBadge.classList.remove('hidden');
+            } else {
+                cartBadge.classList.add('hidden');
+            }
+        }
+
+        // --- CAMBIO DE ROL Y NAVEGACIÓN ---
+        function switchRole(newRole) {
+            state.role = newRole;
+            render();
+        }
+
+        function switchTab(newTab) {
+            state.activeTab = newTab;
+            render();
+        }
+
+        function selectBranch(branchId, goToMenu = false) {
+            state.data.activeBranchId = branchId;
+            state.cart = {}; // Reiniciar cuenta al cambiar de restaurante
+            state.selectedCategory = 'Todos';
+            saveAppData();
+            if (goToMenu) {
+                state.activeTab = 'menu';
+            }
+            render();
+            showToast(`Conectado a ${getActiveBranch().name}`);
+        }
+
+        // --- MODALES PRO Y PLAY STORE ---
+        function openProModal() {
+            document.getElementById('pro-modal').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closeProModal() {
+            document.getElementById('pro-modal').classList.add('hidden');
+        }
+
+        function activateProPlan() {
+            state.data.isPro = true;
+            saveAppData();
+            closeProModal();
+            render();
+            showToast('👑 ¡Franquicia PRO activada con éxito!');
+        }
+
+        function toggleProPlan(isPro) {
+            if (isPro && !state.data.isPro) {
+                openProModal();
+                return;
+            }
+            state.data.isPro = isPro;
+            saveAppData();
+            render();
+            showToast(isPro ? '👑 Modo Franquicia PRO activo' : 'Cambiado a Plan Básico');
+        }
+
+        function openPlayStoreModal() {
+            document.getElementById('playstore-modal').classList.remove('hidden');
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function closePlayStoreModal() {
+            document.getElementById('playstore-modal').classList.add('hidden');
+        }
+
+        function shareViralPlayStore() {
+            const branch = getActiveBranch();
+            const shareText = `📲 ¡Mira el menú digital y paga sin esperar en ${branch.name}! Descarga MenúQR gratis en Google Play Store: ${PLAY_STORE_URL}`;
+            copyText(shareText, 'Enlace viral de Play Store');
+        }
+
+        function formatDualPrice(usdPrice) {
+            if (!state.data.isPro || !state.data.showDualCurrency) return '';
+            const bs = (usdPrice * (state.data.exchangeRate || 46.5)).toFixed(2);
+            return `<span class="block text-[10px] font-semibold text-stone-400">Bs. ${bs}</span>`;
+        }
+
+        // --- LÓGICA DEL CARRITO / CALCULADORA DE CUENTA ---
+        function updateCart(itemId, delta) {
+            const current = state.cart[itemId] || 0;
+            const next = current + delta;
+            if (next <= 0) {
+                delete state.cart[itemId];
+            } else {
+                state.cart[itemId] = next;
+            }
+            render();
+        }
+
+        function getCartTotal() {
+            const branch = getActiveBranch();
+            let total = 0;
+            for (const [itemId, qty] of Object.entries(state.cart)) {
+                const dish = branch.menu.find(m => m.id === itemId);
+                if (dish) total += dish.price * qty;
+            }
+            return total;
+        }
+
+        // --- VISTAS DEL MODO CLIENTE ---
+        function renderScannerTab() {
+            const branch = getActiveBranch();
+            return `
+                <div class="p-4 space-y-4 fade-in">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-stone-200/80 text-center">
+                        <h2 class="text-base font-bold text-neutral-900">Escanea el QR de tu mesa</h2>
+                        <p class="text-xs text-stone-500 mt-1">Apunta con la cámara para cargar el menú, precios y datos de pago al instante.</p>
+
+                        <!-- Simulador de Visor de Cámara -->
+                        <div class="relative mx-auto mt-4 w-60 h-60 bg-neutral-900 rounded-3xl overflow-hidden flex items-center justify-center shadow-inner border-4 border-neutral-800">
+                            <!-- Patrón QR decorativo de fondo -->
+                            <div class="opacity-25 text-white flex flex-col items-center">
+                                <i data-lucide="qr-code" class="w-32 h-32 stroke-[1.2]"></i>
+                                <span class="text-[10px] font-mono mt-1 tracking-widest">${branch.tableCode}</span>
+                            </div>
+
+                            <!-- Esquinas del visor -->
+                            <div class="absolute top-4 left-4 w-7 h-7 border-t-4 border-l-4 border-amber-400 rounded-tl-xl"></div>
+                            <div class="absolute top-4 right-4 w-7 h-7 border-t-4 border-r-4 border-amber-400 rounded-tr-xl"></div>
+                            <div class="absolute bottom-4 left-4 w-7 h-7 border-b-4 border-l-4 border-amber-400 rounded-bl-xl"></div>
+                            <div class="absolute bottom-4 right-4 w-7 h-7 border-b-4 border-r-4 border-amber-400 rounded-br-xl"></div>
+
+                            <!-- Línea Láser Animada -->
+                            <div class="absolute left-3 right-3 h-0.5 bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_12px_#fbbf24] animate-scan"></div>
+                        </div>
+
+                        <!-- Selector para probar distintos QR de franquicia -->
+                        <div class="mt-4 text-left">
+                            <label class="block text-[11px] font-semibold text-stone-500 uppercase tracking-wider mb-1">Simular código QR de sucursal:</label>
+                            <select onchange="selectBranch(this.value, false)" class="w-full bg-stone-100 border border-stone-200 text-neutral-800 text-xs font-semibold rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-amber-500">
+                                ${state.data.branches.map(b => `
+                                    <option value="${b.id}" ${b.id === branch.id ? 'selected' : ''}>
+                                        QR: ${b.name} (${b.tableCode})
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <button onclick="simulateScanSuccess()" class="mt-4 w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-700 hover:to-amber-600 text-white font-bold text-sm py-3.5 px-4 rounded-xl shadow-md shadow-orange-500/20 flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+                            <i data-lucide="camera" class="w-4 h-4"></i>
+                            Simular Escaneo de Mesa
+                        </button>
+                    </div>
+
+                    <!-- Acceso rápido a métodos de pago -->
+                    <div class="bg-amber-50 border border-amber-200/80 rounded-2xl p-3.5 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-700 flex items-center justify-center shrink-0">
+                                <i data-lucide="zap" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-neutral-900">¿Ya consumiste y vas a pagar?</p>
+                                <p class="text-[11px] text-stone-600">Copia los datos bancarios sin esperar al mesonero.</p>
+                            </div>
+                        </div>
+                        <button onclick="switchTab('pay')" class="bg-neutral-900 text-white text-xs font-semibold px-3 py-2 rounded-xl shrink-0">
+                            Ir a Pagar
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function simulateScanSuccess() {
+            const branch = getActiveBranch();
+            showToast(`¡QR Escaneado! Bienvenido a ${branch.name}`);
+            setTimeout(() => {
+                switchTab('menu');
+            }, 350);
+        }
+
+        function renderMenuTab() {
+            const branch = getActiveBranch();
+            const categories = ['Todos', 'Entradas', 'Platos Fuertes', 'Bebidas', 'Postres'];
+            const availableMenu = branch.menu.filter(item => item.available);
+            const filteredMenu = state.selectedCategory === 'Todos'
+                ? availableMenu
+                : availableMenu.filter(item => item.category === state.selectedCategory);
+
+            const totalBill = getCartTotal();
+            const totalQty = Object.values(state.cart).reduce((a, b) => a + b, 0);
+
+            return `
+                <div class="p-4 space-y-4 fade-in">
+                    <!-- Banner del Restaurante Activo -->
+                    <div class="text-white p-4 rounded-2xl relative overflow-hidden shadow-md" style="background: linear-gradient(135deg, #171717 45%, ${state.data.isPro && branch.brandColor ? branch.brandColor : '#292524'} 140%);">
+                        <div class="relative z-10">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[10px] font-bold uppercase tracking-wider bg-amber-500 text-neutral-950 px-2 py-0.5 rounded-md">${branch.tableCode}</span>
+                                    ${state.data.isPro ? `<span class="text-[9px] font-bold uppercase bg-white/15 text-amber-300 px-2 py-0.5 rounded-md">Verificado PRO</span>` : ''}
+                                </div>
+                                <span class="text-[11px] text-stone-300 flex items-center gap-1">
+                                    <i data-lucide="clock" class="w-3 h-3 text-amber-400"></i> ${branch.hours}
+                                </span>
+                            </div>
+                            <h2 class="text-lg font-extrabold mt-1.5">${branch.name}</h2>
+                            <p class="text-xs text-stone-300">${branch.category} • ${branch.address}</p>
+                            ${state.data.isPro && state.data.showDualCurrency ? `
+                                <p class="text-[10px] text-amber-300 font-semibold mt-1.5 flex items-center gap-1">
+                                    <i data-lucide="refresh-cw" class="w-3 h-3"></i> Tasa del día: Bs. ${Number(state.data.exchangeRate).toFixed(2)} / USD
+                                </p>
+                            ` : ''}
+                        </div>
+                    </div>
+
+                    <!-- Filtro de Categorías -->
+                    <div class="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+                        ${categories.map(cat => `
+                            <button onclick="state.selectedCategory='${cat}'; render();" class="px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition-all ${state.selectedCategory === cat ? 'bg-neutral-900 text-white shadow-sm' : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-100'}">
+                                ${cat}
+                            </button>
+                        `).join('')}
+                    </div>
+
+                    <!-- Listado de Platos y Precios -->
+                    <div class="space-y-3">
+                        ${filteredMenu.length === 0 ? `
+                            <div class="text-center py-8 bg-white rounded-2xl border border-stone-200">
+                                <p class="text-sm font-semibold text-stone-500">No hay platos disponibles en esta categoría.</p>
+                            </div>
+                        ` : filteredMenu.map(item => {
+                            const qty = state.cart[item.id] || 0;
+                            return `
+                                <div class="bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-sm flex gap-3 items-center">
+                                    <div class="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-2xl shrink-0">
+                                        ${item.emoji || '🍽️'}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <h3 class="text-sm font-bold text-neutral-900 leading-tight">${item.name}</h3>
+                                            <div class="text-right shrink-0">
+                                                <span class="text-sm font-extrabold text-orange-600">$${item.price.toFixed(2)}</span>
+                                                ${formatDualPrice(item.price)}
+                                            </div>
+                                        </div>
+                                        <p class="text-[11px] text-stone-500 line-clamp-2 mt-0.5 leading-snug">${item.desc}</p>
+
+                                        <div class="mt-2 flex items-center justify-between">
+                                            <span class="text-[10px] font-medium text-stone-400 bg-stone-100 px-2 py-0.5 rounded-md">${item.category}</span>
+
+                                            <!-- Controles para sumar a Mi Cuenta -->
+                                            ${qty === 0 ? `
+                                                <button onclick="updateCart('${item.id}', 1)" class="text-xs font-bold text-amber-700 bg-amber-100 hover:bg-amber-200 px-3 py-1 rounded-lg transition-colors flex items-center gap-1">
+                                                    <i data-lucide="plus" class="w-3.5 h-3.5"></i> Agregar
+                                                </button>
+                                            ` : `
+                                                <div class="flex items-center gap-2 bg-neutral-900 text-white rounded-lg px-2 py-1">
+                                                    <button onclick="updateCart('${item.id}', -1)" class="w-5 h-5 flex items-center justify-center text-amber-400 font-bold">-</button>
+                                                    <span class="text-xs font-bold min-w-[14px] text-center">${qty}</span>
+                                                    <button onclick="updateCart('${item.id}', 1)" class="w-5 h-5 flex items-center justify-center text-amber-400 font-bold">+</button>
+                                                </div>
+                                            `}
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <!-- Resumen Flotante de Mi Cuenta -->
+                    ${totalQty > 0 ? `
+                        <div class="sticky bottom-2 bg-neutral-900 text-white p-3.5 rounded-2xl shadow-xl border border-neutral-700 space-y-2.5">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-[10px] uppercase tracking-wider text-stone-400 font-semibold">Mi Cuenta (${totalQty} ${totalQty === 1 ? 'ítem' : 'ítems'})</p>
+                                    <p class="text-lg font-extrabold text-amber-400">
+                                        $${totalBill.toFixed(2)} <span class="text-xs font-normal text-stone-300">USD</span>
+                                        ${state.data.isPro && state.data.showDualCurrency ? `<span class="text-xs font-semibold text-stone-400 ml-1">/ Bs. ${(totalBill * state.data.exchangeRate).toFixed(2)}</span>` : ''}
+                                    </p>
+                                </div>
+                                <button onclick="switchTab('pay')" class="bg-gradient-to-r from-orange-600 to-amber-500 text-white font-bold text-xs px-3.5 py-2.5 rounded-xl shadow flex items-center gap-1.5">
+                                    Pagar <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            ${state.data.isPro ? `
+                                <button onclick="sendOrderToWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow transition-all">
+                                    <i data-lucide="message-circle" class="w-4 h-4"></i> Enviar Pedido por WhatsApp al Restaurante
+                                </button>
+                            ` : ''}
+                        </div>
+                    ` : ''}
+
+                    <!-- Banner Viral Play Store en Pie de Menú -->
+                    <div class="bg-gradient-to-r from-stone-900 to-neutral-800 text-white p-3.5 rounded-2xl flex items-center justify-between gap-3 border border-neutral-700">
+                        <div class="min-w-0">
+                            <p class="text-[11px] font-bold text-amber-400">¿Tienes un restaurante o franquicia?</p>
+                            <p class="text-[10px] text-stone-300 mt-0.5 leading-snug">Crea tu menú QR gratis o descarga la app en Google Play Store.</p>
+                        </div>
+                        <button onclick="openPlayStoreModal()" class="bg-white text-neutral-950 font-extrabold text-[10px] px-3 py-2 rounded-xl shrink-0 flex items-center gap-1 shadow">
+                            <i data-lucide="download" class="w-3.5 h-3.5 text-emerald-600"></i> Google Play
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function sendOrderToWhatsApp() {
+            const branch = getActiveBranch();
+            const totalBill = getCartTotal();
+            let lines = [`Hola *${branch.name}* (${branch.tableCode}), quiero realizar el siguiente pedido desde *MenúQR*:\n`];
+
+            for (const [itemId, qty] of Object.entries(state.cart)) {
+                const dish = branch.menu.find(m => m.id === itemId);
+                if (dish) {
+                    lines.push(`• ${qty}x ${dish.name} — $${(dish.price * qty).toFixed(2)}`);
+                }
+            }
+            lines.push(`\n*Total:* $${totalBill.toFixed(2)} USD`);
+            if (state.data.showDualCurrency) {
+                lines.push(`*Equivalente:* Bs. ${(totalBill * state.data.exchangeRate).toFixed(2)}`);
+            }
+            lines.push(`\n📲 _Enviado con MenúQR App_`);
+
+            const cleanPhone = (branch.whatsapp || '584140000000').replace(/\D/g, '');
+            const url = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(lines.join('\n'))}`;
+            showToast('Abriendo pedido en WhatsApp...');
+            window.open(url, '_blank');
+        }
+
+        function renderPayTab() {
+            const branch = getActiveBranch();
+            const p = branch.payments;
+            const totalBill = getCartTotal();
+
+            return `
+                <div class="p-4 space-y-4 fade-in">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-base font-extrabold text-neutral-900">Métodos de Pago</h2>
+                            <p class="text-xs text-stone-500">Datos oficiales de <span class="font-semibold text-neutral-800">${branch.name}</span></p>
+                        </div>
+                        ${totalBill > 0 ? `
+                            <div class="bg-amber-100 border border-amber-300 px-3 py-1.5 rounded-xl text-right">
+                                <span class="block text-[9px] font-bold uppercase text-amber-800">Total Cuenta</span>
+                                <span class="text-sm font-extrabold text-neutral-900">$${totalBill.toFixed(2)}</span>
+                                ${state.data.isPro && state.data.showDualCurrency ? `<span class="block text-[10px] font-bold text-amber-900">Bs. ${(totalBill * state.data.exchangeRate).toFixed(2)}</span>` : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Tarjeta Pago Móvil -->
+                    <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+                                    <i data-lucide="smartphone" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-sm text-neutral-900">Pago Móvil</span>
+                            </div>
+                            <button onclick="copyText('${p.pagoMovil.bank} - ${p.pagoMovil.idNumber} - ${p.pagoMovil.phone}', 'Pago Móvil')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 active:scale-95 transition-all">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar todo
+                            </button>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100 space-y-1.5 text-xs">
+                            <div class="flex justify-between"><span class="text-stone-500">Banco:</span><span class="font-bold text-neutral-800">${p.pagoMovil.bank}</span></div>
+                            <div class="flex justify-between"><span class="text-stone-500">Cédula / RIF:</span><span class="font-bold text-neutral-800">${p.pagoMovil.idNumber}</span></div>
+                            <div class="flex justify-between"><span class="text-stone-500">Teléfono:</span><span class="font-bold text-neutral-800">${p.pagoMovil.phone}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta Transferencia Bancaria -->
+                    <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                                    <i data-lucide="landmark" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-sm text-neutral-900">Transferencia Bancaria</span>
+                            </div>
+                            <button onclick="copyText('${p.transfer.account}', 'Número de cuenta')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 active:scale-95 transition-all">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar cuenta
+                            </button>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100 space-y-1.5 text-xs">
+                            <div class="flex justify-between"><span class="text-stone-500">Banco:</span><span class="font-bold text-neutral-800">${p.transfer.bank}</span></div>
+                            <div class="flex justify-between"><span class="text-stone-500">Titular:</span><span class="font-bold text-neutral-800">${p.transfer.holder}</span></div>
+                            <div class="flex justify-between"><span class="text-stone-500">RIF:</span><span class="font-bold text-neutral-800">${p.transfer.rif}</span></div>
+                            <div class="pt-1 border-t border-stone-200/70">
+                                <span class="text-stone-500 block text-[10px]">Número de Cuenta:</span>
+                                <span class="font-mono font-bold text-neutral-900 text-[11px] select-all">${p.transfer.account}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tarjeta Zelle -->
+                    <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-2.5">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
+                                    <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+                                </div>
+                                <span class="font-bold text-sm text-neutral-900">Zelle (USD)</span>
+                            </div>
+                            <button onclick="copyText('${p.zelle.email}', 'Correo Zelle')" class="bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold px-3 py-1.5 rounded-xl flex items-center gap-1.5 active:scale-95 transition-all">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copiar correo
+                            </button>
+                        </div>
+                        <div class="bg-stone-50 p-3 rounded-xl border border-stone-100 space-y-1 text-xs">
+                            <div class="flex justify-between"><span class="text-stone-500">Correo:</span><span class="font-bold text-neutral-800">${p.zelle.email}</span></div>
+                            <div class="flex justify-between"><span class="text-stone-500">Titular:</span><span class="font-bold text-neutral-800">${p.zelle.holder}</span></div>
+                        </div>
+                    </div>
+
+                    <!-- Reportar Comprobante Simulado -->
+                    <div class="bg-neutral-900 text-white p-4 rounded-2xl space-y-3">
+                        <p class="text-xs font-bold">¿Ya realizaste tu transferencia?</p>
+                        <div class="flex gap-2">
+                            <input id="ref-input" type="text" placeholder="Últimos 4 dígitos de referencia..." class="flex-1 bg-neutral-800 border border-neutral-700 rounded-xl px-3 py-2 text-xs text-white placeholder-stone-400 focus:outline-none focus:border-amber-400">
+                            <button onclick="reportPayment()" class="bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs px-4 py-2 rounded-xl shrink-0">
+                                Notificar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Banner Viral Play Store en Pantalla de Pago -->
+                    <div class="bg-emerald-50 border border-emerald-200 p-3.5 rounded-2xl flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0">
+                                <i data-lucide="smartphone" class="w-4 h-4"></i>
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold text-neutral-900">Lleva MenúQR en tu teléfono</p>
+                                <p class="text-[10px] text-stone-600">Descarga la app en Play Store o afilia tu local.</p>
+                            </div>
+                        </div>
+                        <button onclick="openPlayStoreModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] px-3 py-2 rounded-xl shrink-0">
+                            Obtener App
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- VISTA DEL MODO DUEÑO DE FRANQUICIA ---
+        function renderOwnerDashboard() {
+            const branch = getActiveBranch();
+            const isPro = state.data.isPro;
+
+            return `
+                <div class="p-4 space-y-4 fade-in pb-10">
+                    <!-- Cabecera Panel Dueño con Selector de Plan -->
+                    <div class="bg-gradient-to-br from-neutral-900 to-neutral-800 text-white p-4 rounded-2xl shadow-md space-y-3">
+                        <div class="flex items-center justify-between gap-2">
+                            <!-- Switch Plan Básico vs Franquicia PRO -->
+                            <div class="bg-neutral-950 p-1 rounded-full flex items-center border border-neutral-700">
+                                <button onclick="toggleProPlan(false)" class="px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${!isPro ? 'bg-stone-200 text-neutral-950' : 'text-stone-400 hover:text-white'}">
+                                    Plan Básico
+                                </button>
+                                <button onclick="toggleProPlan(true)" class="px-2.5 py-1 rounded-full text-[10px] font-bold transition-all flex items-center gap-1 ${isPro ? 'bg-gradient-to-r from-amber-400 to-orange-500 text-neutral-950 shadow' : 'text-amber-400 hover:text-amber-300'}">
+                                    <i data-lucide="crown" class="w-3 h-3"></i> Franquicia PRO
+                                </button>
+                            </div>
+                            <button onclick="resetDemoData()" class="text-[10px] text-stone-400 hover:text-white underline">Restaurar</button>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="text-[11px] text-stone-300">Sucursal activa:</label>
+                                <button onclick="handleAddBranchClick()" class="text-[10px] font-bold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                                    <i data-lucide="plus-circle" class="w-3 h-3"></i> Nueva Sucursal ${!isPro ? '🔒' : ''}
+                                </button>
+                            </div>
+                            <select onchange="selectBranch(this.value, false)" class="w-full bg-neutral-950 border border-neutral-700 text-white text-xs font-bold rounded-xl px-3 py-2.5 focus:outline-none focus:border-emerald-400">
+                                ${state.data.branches.map(b => `
+                                    <option value="${b.id}" ${b.id === branch.id ? 'selected' : ''}>
+                                        ${b.name}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        ${!isPro ? `
+                            <div onclick="openProModal()" class="cursor-pointer bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-400/40 rounded-xl p-2.5 flex items-center justify-between">
+                                <div class="text-[11px]">
+                                    <span class="font-extrabold text-amber-300 block">Desbloquea Franquicia PRO 👑</span>
+                                    <span class="text-stone-300 text-[10px]">Pedidos WhatsApp, Tasa Bs., QR HD y Multi-sede.</span>
+                                </div>
+                                <span class="bg-amber-400 text-neutral-950 text-[10px] font-extrabold px-2.5 py-1.5 rounded-lg shrink-0">Ver Plan</span>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Navegación Interna del Dueño -->
+                    <div class="grid grid-cols-3 gap-1.5 bg-stone-200/80 p-1 rounded-2xl">
+                        <button onclick="state.ownerTab='menu'; render();" class="py-2 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${state.ownerTab === 'menu' ? 'bg-white text-neutral-900 shadow-sm' : 'text-stone-600 hover:text-neutral-900'}">
+                            <i data-lucide="utensils" class="w-3.5 h-3.5"></i> Menú & Pagos
+                        </button>
+                        <button onclick="state.ownerTab='qr'; render();" class="py-2 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${state.ownerTab === 'qr' ? 'bg-white text-neutral-900 shadow-sm' : 'text-stone-600 hover:text-neutral-900'}">
+                            <i data-lucide="qr-code" class="w-3.5 h-3.5 text-orange-600"></i> Códigos QR
+                        </button>
+                        <button onclick="state.ownerTab='pro'; render();" class="py-2 px-2 rounded-xl text-[11px] font-bold transition-all flex items-center justify-center gap-1 ${state.ownerTab === 'pro' ? 'bg-white text-neutral-900 shadow-sm' : 'text-stone-600 hover:text-neutral-900'}">
+                            <i data-lucide="crown" class="w-3.5 h-3.5 text-amber-500"></i> Herramientas PRO
+                        </button>
+                    </div>
+
+                    ${state.ownerTab === 'menu' ? renderOwnerMenuAndPaySection(branch) : ''}
+                    ${state.ownerTab === 'qr' ? renderOwnerQRGeneratorSection(branch) : ''}
+                    ${state.ownerTab === 'pro' ? renderOwnerProToolsSection(branch) : ''}
+                </div>
+            `;
+        }
+
+        function handleAddBranchClick() {
+            if (!state.data.isPro) {
+                showToast('🔒 Multi-sucursal requiere Franquicia PRO');
+                openProModal();
+                return;
+            }
+            const newId = 'b_' + Date.now();
+            const num = state.data.branches.length + 1;
+            const current = getActiveBranch();
+            state.data.branches.push({
+                id: newId,
+                name: `${current.name.split('-')[0].trim()} - Sucursal #${num}`,
+                category: current.category,
+                address: 'Nueva Ubicación Comercial, Local 1',
+                hours: '11:00 AM - 10:00 PM',
+                whatsapp: current.whatsapp,
+                brandColor: current.brandColor || '#ea580c',
+                isOpen: true,
+                tableCode: `SEDE-${num}`,
+                stats: { scansToday: 12, topDish: current.menu[0]?.name || 'Combo Especial', payClicks: 8 },
+                payments: JSON.parse(JSON.stringify(current.payments)),
+                menu: JSON.parse(JSON.stringify(current.menu))
+            });
+            state.data.activeBranchId = newId;
+            saveAppData();
+            render();
+            showToast(`👑 ¡Nueva sucursal #${num} creada!`);
+        }
+
+        function renderOwnerMenuAndPaySection(branch) {
+            const p = branch.payments;
+            return `
+                <div class="space-y-4">
+                    <!-- SECCIÓN 1: GESTOR DE MENÚ Y PRECIOS -->
+                    <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between border-b border-stone-100 pb-2.5">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="utensils-crossed" class="w-4 h-4 text-orange-600"></i>
+                                <h3 class="font-extrabold text-sm text-neutral-900">Menú y Precios en Vivo</h3>
+                            </div>
+                            <span class="text-[11px] font-semibold text-stone-400">${branch.menu.length} platos</span>
+                        </div>
+
+                        <!-- Formulario para Agregar Nuevo Plato -->
+                        <form onsubmit="addNewDish(event)" class="bg-stone-50 p-3 rounded-xl border border-stone-200/80 space-y-2.5">
+                            <p class="text-xs font-bold text-neutral-800 flex items-center gap-1">
+                                <i data-lucide="plus-circle" class="w-3.5 h-3.5 text-emerald-600"></i> Agregar Nuevo Plato
+                            </p>
+                            <div class="grid grid-cols-3 gap-2">
+                                <input id="new-dish-name" type="text" required placeholder="Nombre del plato" class="col-span-2 bg-white border border-stone-200 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-emerald-500">
+                                <input id="new-dish-price" type="number" step="0.01" min="0.1" required placeholder="Precio $" class="bg-white border border-stone-200 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <select id="new-dish-cat" class="col-span-2 bg-white border border-stone-200 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-emerald-500">
+                                    <option value="Platos Fuertes">Platos Fuertes</option>
+                                    <option value="Entradas">Entradas</option>
+                                    <option value="Bebidas">Bebidas</option>
+                                    <option value="Postres">Postres</option>
+                                </select>
+                                <input id="new-dish-emoji" type="text" maxlength="2" placeholder="Emoji 🍕" value="🍽️" class="bg-white border border-stone-200 rounded-lg px-2.5 py-2 text-xs text-center focus:outline-none focus:border-emerald-500">
+                            </div>
+                            <input id="new-dish-desc" type="text" required placeholder="Breve descripción de ingredientes..." class="w-full bg-white border border-stone-200 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-emerald-500">
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm transition-all">
+                                + Publicar Plato en el Menú QR
+                            </button>
+                        </form>
+
+                        <!-- Lista Editable de Platos Actuales -->
+                        <div class="space-y-2.5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-stone-400">Editar precios o disponibilidad:</p>
+                            ${branch.menu.map(item => `
+                                <div class="p-3 rounded-xl border ${item.available ? 'border-stone-200 bg-white' : 'border-stone-200 bg-stone-100 opacity-70'} flex items-center justify-between gap-2">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-xs font-bold text-neutral-900 truncate">${item.emoji} ${item.name}</p>
+                                        <p class="text-[10px] text-stone-500">${item.category}</p>
+                                    </div>
+                                    <div class="flex items-center gap-2 shrink-0">
+                                        <div class="flex items-center bg-stone-100 border border-stone-200 rounded-lg px-2 py-1">
+                                            <span class="text-xs font-bold text-stone-500 mr-1">$</span>
+                                            <input type="number" step="0.10" value="${item.price.toFixed(2)}" onchange="updateDishPrice('${item.id}', this.value)" class="w-12 bg-transparent text-xs font-extrabold text-neutral-900 focus:outline-none">
+                                        </div>
+                                        <button onclick="toggleDishAvailability('${item.id}')" title="Activar/Pausar plato" class="px-2 py-1.5 rounded-lg text-[10px] font-bold ${item.available ? 'bg-emerald-100 text-emerald-700' : 'bg-stone-300 text-stone-700'}">
+                                            ${item.available ? 'Activo' : 'Pausado'}
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 2: CONFIGURACIÓN DE DATOS BANCARIOS Y TRANSFERENCIAS -->
+                    <form onsubmit="savePaymentSettings(event)" class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-3">
+                        <div class="flex items-center gap-2 border-b border-stone-100 pb-2.5">
+                            <i data-lucide="credit-card" class="w-4 h-4 text-blue-600"></i>
+                            <h3 class="font-extrabold text-sm text-neutral-900">Cuentas de Cobro y Transferencias</h3>
+                        </div>
+
+                        <div class="space-y-2">
+                            <p class="text-[11px] font-bold text-blue-700 uppercase">Pago Móvil</p>
+                            <input id="pm-bank" type="text" value="${p.pagoMovil.bank}" placeholder="Banco" class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs">
+                            <div class="grid grid-cols-2 gap-2">
+                                <input id="pm-id" type="text" value="${p.pagoMovil.idNumber}" placeholder="RIF / Cédula" class="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs">
+                                <input id="pm-phone" type="text" value="${p.pagoMovil.phone}" placeholder="Teléfono" class="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-stone-100">
+                            <p class="text-[11px] font-bold text-emerald-700 uppercase">Transferencia Bancaria</p>
+                            <input id="tr-bank" type="text" value="${p.transfer.bank}" placeholder="Banco" class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs">
+                            <input id="tr-account" type="text" value="${p.transfer.account}" placeholder="Número de Cuenta (20 dígitos)" class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs font-mono">
+                            <input id="tr-holder" type="text" value="${p.transfer.holder}" placeholder="Titular de la cuenta" class="w-full bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs">
+                        </div>
+
+                        <div class="space-y-2 pt-2 border-t border-stone-100">
+                            <p class="text-[11px] font-bold text-purple-700 uppercase">Zelle</p>
+                            <div class="grid grid-cols-2 gap-2">
+                                <input id="zl-email" type="email" value="${p.zelle.email}" placeholder="Correo Zelle" class="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs">
+                                <input id="zl-holder" type="text" value="${p.zelle.holder}" placeholder="Titular Zelle" class="bg-stone-50 border border-stone-200 rounded-lg px-3 py-2 text-xs">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                            <i data-lucide="save" class="w-4 h-4 text-emerald-400"></i> Guardar Datos Bancarios
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function renderOwnerQRGeneratorSection(branch) {
+            const isPro = state.data.isPro;
+            const tableOptions = ['Mesa 01', 'Mesa 02', 'Mesa 03', 'Mesa 04', 'Mesa 05', 'Barra Principal', 'Terraza VIP', 'Delivery / Caja'];
+
+            return `
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-extrabold text-sm text-neutral-900">Generador de Códigos QR</h3>
+                                <p class="text-[11px] text-stone-500">Crea y descarga el QR listo para imprimir en tus mesas.</p>
+                            </div>
+                            <span class="text-[10px] font-bold px-2 py-1 rounded-lg ${isPro ? 'bg-amber-100 text-amber-800' : 'bg-stone-100 text-stone-600'}">
+                                ${isPro ? 'Sin Marca de Agua 👑' : 'Estándar'}
+                            </span>
+                        </div>
+
+                        <!-- Configuración de Mesa y Estilo -->
+                        <div class="grid grid-cols-2 gap-2.5">
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-stone-500 mb-1">Ubicación / Mesa</label>
+                                <select onchange="state.qrTable=this.value; render();" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-2 text-xs font-bold text-neutral-800">
+                                    ${tableOptions.map(t => `<option value="${t}" ${state.qrTable === t ? 'selected' : ''}>${t}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold uppercase text-stone-500 mb-1">Diseño Impresión</label>
+                                <select onchange="handleQrStyleChange(this.value)" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-2 text-xs font-bold text-neutral-800">
+                                    <option value="card" ${state.qrStyle === 'card' ? 'selected' : ''}>Tarjetón Mesa ${!isPro ? '(PRO)' : '👑'}</option>
+                                    <option value="standard" ${state.qrStyle === 'standard' ? 'selected' : ''}>QR Simple</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Vista Previa del Tarjetón QR -->
+                        <div id="qr-preview-card" class="mx-auto max-w-[270px] rounded-3xl overflow-hidden border-2 border-neutral-900 shadow-lg bg-white text-center">
+                            <div class="py-3 px-4 text-white" style="background-color: ${isPro && branch.brandColor ? branch.brandColor : '#171717'};">
+                                <span class="text-[9px] font-extrabold uppercase tracking-widest bg-black/25 px-2.5 py-0.5 rounded-full">${state.qrTable}</span>
+                                <h4 class="font-extrabold text-sm mt-1 truncate">${branch.name}</h4>
+                            </div>
+
+                            <div class="p-4 flex flex-col items-center justify-center bg-white">
+                                <p class="text-[11px] font-bold text-neutral-800 mb-2.5">Escanea para ver Menú y Pagar</p>
+                                <!-- Contenedor donde QRCode.js inyecta el canvas/img real -->
+                                <div id="qrcode-canvas-box" class="p-2.5 bg-white rounded-2xl border-2 border-stone-200 shadow-inner flex items-center justify-center min-h-[156px] min-w-[156px]"></div>
+                                <p class="text-[10px] text-stone-500 mt-2.5 font-medium">Pago Móvil • Transferencia • Zelle</p>
+                            </div>
+
+                            <div class="bg-stone-100 py-2 px-3 border-t border-stone-200 flex items-center justify-center gap-1.5">
+                                <span class="text-[9px] font-bold text-stone-500">${isPro ? 'Menú Digital Verificado' : 'Creado con MenúQR • Play Store'}</span>
+                            </div>
+                        </div>
+
+                        <!-- Botones de Descarga y Viralidad -->
+                        <div class="space-y-2 pt-1">
+                            <button onclick="downloadQRPrintablePNG()" class="w-full bg-neutral-900 hover:bg-neutral-800 text-white font-bold text-xs py-3 px-4 rounded-xl shadow flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+                                <i data-lucide="download" class="w-4 h-4 text-amber-400"></i> Descargar QR para Imprimir (PNG)
+                            </button>
+
+                            <button onclick="shareViralPlayStore()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 px-4 rounded-xl shadow flex items-center justify-center gap-2 active:scale-[0.98] transition-all">
+                                <i data-lucide="share-2" class="w-4 h-4"></i> Compartir en Play Store (Viral)
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function handleQrStyleChange(val) {
+            if (val === 'card' && !state.data.isPro) {
+                showToast('👑 Tarjetón Premium sin marca de agua es PRO');
+                openProModal();
+                return;
+            }
+            state.qrStyle = val;
+            render();
+        }
+
+        function generateLiveQRCode() {
+            const box = document.getElementById('qrcode-canvas-box');
+            if (!box || typeof QRCode === 'undefined') return;
+            box.innerHTML = '';
+            const branch = getActiveBranch();
+            const qrPayload = `${PLAY_STORE_URL}&branch=${encodeURIComponent(branch.id)}&table=${encodeURIComponent(state.qrTable)}`;
+
+            new QRCode(box, {
+                text: qrPayload,
+                width: 140,
+                height: 140,
+                colorDark: '#171717',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+
+        function downloadQRPrintablePNG() {
+            const branch = getActiveBranch();
+            const isPro = state.data.isPro;
+            const sourceCanvas = document.querySelector('#qrcode-canvas-box canvas');
+
+            if (!sourceCanvas) {
+                showToast('Generando código QR, intenta de nuevo...');
+                return;
+            }
+
+            // Crear un lienzo de alta resolución listo para imprimir en mesa
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = 600;
+            exportCanvas.height = 760;
+            const ctx = exportCanvas.getContext('2d');
+
+            // Fondo blanco
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 600, 760);
+
+            // Cabecera con color de marca
+            ctx.fillStyle = isPro && branch.brandColor ? branch.brandColor : '#171717';
+            ctx.fillRect(0, 0, 600, 155);
+
+            // Etiqueta de Mesa
+            ctx.fillStyle = '#fbbf24';
+            ctx.font = 'bold 22px Inter, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(state.qrTable.toUpperCase(), 300, 58);
+
+            // Nombre de la franquicia
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 32px Inter, sans-serif';
+            ctx.fillText(branch.name, 300, 112);
+
+            // Instrucción
+            ctx.fillStyle = '#171717';
+            ctx.font = 'bold 24px Inter, sans-serif';
+            ctx.fillText('Escanea el QR para ver el Menú', 300, 215);
+
+            // Marco del QR
+            ctx.strokeStyle = '#e7e5e4';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(130, 245, 340, 340);
+
+            // Dibujar QR real escalado
+            ctx.drawImage(sourceCanvas, 150, 265, 300, 300);
+
+            // Métodos aceptados
+            ctx.fillStyle = '#57534e';
+            ctx.font = '600 20px Inter, sans-serif';
+            ctx.fillText('Pago Móvil • Transferencia • Zelle', 300, 635);
+
+            // Pie de página (Marca de agua solo en Plan Básico)
+            ctx.fillStyle = '#f5f5f4';
+            ctx.fillRect(0, 685, 600, 75);
+            ctx.fillStyle = '#78716c';
+            ctx.font = 'bold 18px Inter, sans-serif';
+            ctx.fillText(
+                isPro ? `${branch.address}` : 'Descarga MenúQR gratis en Google Play Store',
+                300,
+                730
+            );
+
+            // Descargar archivo PNG
+            const link = document.createElement('a');
+            link.download = `QR-${branch.name.replace(/\s+/g, '_')}-${state.qrTable.replace(/\s+/g, '_')}.png`;
+            link.href = exportCanvas.toDataURL('image/png');
+            link.click();
+
+            showToast('¡Tarjetón QR descargado en PNG!');
+        }
+
+        function renderOwnerProToolsSection(branch) {
+            const isPro = state.data.isPro;
+            const stats = branch.stats || { scansToday: 120, topDish: 'Plato Especial', payClicks: 80 };
+
+            return `
+                <div class="space-y-4">
+                    <!-- Analíticas en Vivo -->
+                    <div class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-3 relative overflow-hidden">
+                        <div class="flex items-center justify-between">
+                            <h3 class="font-extrabold text-sm text-neutral-900 flex items-center gap-1.5">
+                                <i data-lucide="bar-chart-3" class="w-4 h-4 text-amber-500"></i> Analíticas de Franquicia
+                            </h3>
+                            <span class="text-[10px] font-extrabold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">PRO 👑</span>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 text-center ${!isPro ? 'blur-[3px] select-none pointer-events-none' : ''}">
+                            <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                                <span class="text-lg font-extrabold text-neutral-900 block">${stats.scansToday}</span>
+                                <span class="text-[10px] text-stone-500">Escaneos hoy</span>
+                            </div>
+                            <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                                <span class="text-lg font-extrabold text-emerald-600 block">${stats.payClicks}</span>
+                                <span class="text-[10px] text-stone-500">Pagos copiados</span>
+                            </div>
+                            <div class="bg-stone-50 p-2.5 rounded-xl border border-stone-100">
+                                <span class="text-lg font-extrabold text-orange-600 block">64%</span>
+                                <span class="text-[10px] text-stone-500">Conversión</span>
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-stone-600 bg-amber-50/70 px-3 py-2 rounded-xl border border-amber-100 ${!isPro ? 'blur-[3px]' : ''}">
+                            ⭐ <strong>Plato estrella:</strong> ${stats.topDish}
+                        </p>
+
+                        ${!isPro ? `
+                            <div class="absolute inset-0 bg-white/60 backdrop-blur-[1px] flex flex-col items-center justify-center p-4 text-center">
+                                <button onclick="openProModal()" class="bg-neutral-900 text-amber-400 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-lg flex items-center gap-1.5">
+                                    <i data-lucide="lock" class="w-3.5 h-3.5"></i> Desbloquear Métricas PRO
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <!-- Configuración Avanzada PRO -->
+                    <form onsubmit="saveProSettings(event)" class="bg-white p-4 rounded-2xl border border-stone-200 shadow-sm space-y-3.5">
+                        <div class="flex items-center justify-between border-b border-stone-100 pb-2.5">
+                            <h3 class="font-extrabold text-sm text-neutral-900">Automatización & Marca</h3>
+                            ${!isPro ? `<button type="button" onclick="openProModal()" class="text-[10px] font-bold text-amber-600 underline">Activar PRO</button>` : ''}
+                        </div>
+
+                        <!-- Tasa de Cambio Dual -->
+                        <div class="space-y-2">
+                            <div class="flex items-center justify-between">
+                                <label class="text-xs font-bold text-neutral-800">Tasa de Cambio Dual (USD / Bs.)</label>
+                                <input id="pro-dual-toggle" type="checkbox" ${state.data.showDualCurrency ? 'checked' : ''} ${!isPro ? 'disabled' : ''} class="w-4 h-4 accent-amber-500">
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs text-stone-500">1 USD =</span>
+                                <input id="pro-rate-input" type="number" step="0.01" value="${state.data.exchangeRate}" ${!isPro ? 'disabled' : ''} class="flex-1 bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-bold">
+                                <span class="text-xs font-bold text-neutral-700">Bs.</span>
+                            </div>
+                        </div>
+
+                        <!-- WhatsApp para Pedidos Directos -->
+                        <div class="space-y-1.5 pt-2 border-t border-stone-100">
+                            <label class="text-xs font-bold text-neutral-800 block">WhatsApp Recepción de Pedidos</label>
+                            <input id="pro-wa-input" type="text" value="${branch.whatsapp || ''}" ${!isPro ? 'disabled' : ''} placeholder="Ej: 584142894510" class="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs font-mono">
+                            <p class="text-[10px] text-stone-400">Habilita el botón "Enviar Pedido por WhatsApp" en el menú del cliente.</p>
+                        </div>
+
+                        <!-- Color de Marca Propio -->
+                        <div class="flex items-center justify-between pt-2 border-t border-stone-100">
+                            <div>
+                                <label class="text-xs font-bold text-neutral-800 block">Color Corporativo Franquicia</label>
+                                <span class="text-[10px] text-stone-400">Personaliza el encabezado y los QR</span>
+                            </div>
+                            <input id="pro-color-input" type="color" value="${branch.brandColor || '#ea580c'}" ${!isPro ? 'disabled' : ''} class="w-10 h-9 rounded-lg border border-stone-200 cursor-pointer">
+                        </div>
+
+                        ${isPro ? `
+                            <button type="submit" class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-extrabold text-xs py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                                <i data-lucide="check-circle" class="w-4 h-4"></i> Guardar Configuración PRO
+                            </button>
+                        ` : `
+                            <button type="button" onclick="openProModal()" class="w-full bg-neutral-900 text-amber-400 font-extrabold text-xs py-3 rounded-xl shadow flex items-center justify-center gap-1.5">
+                                <i data-lucide="crown" class="w-4 h-4"></i> Actualizar a Franquicia PRO
+                            </button>
+                        `}
+                    </form>
+                </div>
+            `;
+        }
+
+        function saveProSettings(event) {
+            event.preventDefault();
+            if (!state.data.isPro) {
+                openProModal();
+                return;
+            }
+            const branch = getActiveBranch();
+            const rate = parseFloat(document.getElementById('pro-rate-input').value);
+            if (!isNaN(rate) && rate > 0) {
+                state.data.exchangeRate = rate;
+            }
+            state.data.showDualCurrency = document.getElementById('pro-dual-toggle').checked;
+            branch.whatsapp = document.getElementById('pro-wa-input').value.trim();
+            branch.brandColor = document.getElementById('pro-color-input').value;
+
+            saveAppData();
+            render();
+            showToast('👑 Configuración PRO aplicada en vivo');
+        }
+
+        // --- ACCIONES DEL DUEÑO DE FRANQUICIA ---
+        function addNewDish(event) {
+            event.preventDefault();
+            const branch = getActiveBranch();
+            const name = document.getElementById('new-dish-name').value.trim();
+            const price = parseFloat(document.getElementById('new-dish-price').value);
+            const category = document.getElementById('new-dish-cat').value;
+            const emoji = document.getElementById('new-dish-emoji').value.trim() || '🍽️';
+            const desc = document.getElementById('new-dish-desc').value.trim();
+
+            if (!name || isNaN(price)) return;
+
+            branch.menu.unshift({
+                id: 'dish_' + Date.now(),
+                name,
+                category,
+                price,
+                desc,
+                emoji,
+                available: true
+            });
+
+            saveAppData();
+            render();
+            showToast(`¡"${name}" agregado al menú!`);
+        }
+
+        function updateDishPrice(itemId, newPriceStr) {
+            const branch = getActiveBranch();
+            const dish = branch.menu.find(m => m.id === itemId);
+            const parsed = parseFloat(newPriceStr);
+            if (dish && !isNaN(parsed) && parsed >= 0) {
+                dish.price = parsed;
+                saveAppData();
+                showToast(`Precio actualizado a $${parsed.toFixed(2)}`);
+            }
+        }
+
+        function toggleDishAvailability(itemId) {
+            const branch = getActiveBranch();
+            const dish = branch.menu.find(m => m.id === itemId);
+            if (dish) {
+                dish.available = !dish.available;
+                saveAppData();
+                render();
+                showToast(dish.available ? 'Plato activado en el menú' : 'Plato pausado');
+            }
+        }
+
+        function savePaymentSettings(event) {
+            event.preventDefault();
+            const branch = getActiveBranch();
+
+            branch.payments.pagoMovil.bank = document.getElementById('pm-bank').value.trim();
+            branch.payments.pagoMovil.idNumber = document.getElementById('pm-id').value.trim();
+            branch.payments.pagoMovil.phone = document.getElementById('pm-phone').value.trim();
+
+            branch.payments.transfer.bank = document.getElementById('tr-bank').value.trim();
+            branch.payments.transfer.account = document.getElementById('tr-account').value.trim();
+            branch.payments.transfer.holder = document.getElementById('tr-holder').value.trim();
+
+            branch.payments.zelle.email = document.getElementById('zl-email').value.trim();
+            branch.payments.zelle.holder = document.getElementById('zl-holder').value.trim();
+
+            saveAppData();
+            showToast('¡Datos de pago guardados y publicados!');
+        }
+
+        function resetDemoData() {
+            state.data = JSON.parse(JSON.stringify(DEFAULT_DATA));
+            state.cart = {};
+            saveAppData();
+            render();
+            showToast('Datos de demostración restaurados');
+        }
+
+        // --- RENDERIZADO PRINCIPAL ---
+        function render() {
+            updateHeaderAndNav();
+            const main = document.getElementById('main-content');
+
+            if (state.role === 'owner') {
+                main.innerHTML = renderOwnerDashboard();
+                if (state.ownerTab === 'qr') {
+                    setTimeout(generateLiveQRCode, 20);
+                }
+            } else {
+                switch (state.activeTab) {
+                    case 'scan':
+                        main.innerHTML = renderScannerTab();
+                        break;
+                    case 'menu':
+                        main.innerHTML = renderMenuTab();
+                        break;
+                    case 'pay':
+                        main.innerHTML = renderPayTab();
+                        break;
+                    case 'branches':
+                        main.innerHTML = renderBranchesTab();
+                        break;
+                }
+            }
+
+            // Inicializar iconos Lucide en cada renderizado
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+        }
+
+        // Iniciar aplicación al cargar
+        window.addEventListener('DOMContentLoaded', () => {
+            render();
+        });
+    </script>
+</body>
+</html>
