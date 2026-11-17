@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Ícono 192x192 - MenúQR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #111827;
+        }
+        /* Patrón de cuadrícula transparente para previsualizar el PNG */
+        .checkerboard {
+            background-image: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #e5e7eb 75%), 
+                linear-gradient(-45deg, transparent 75%, #e5e7eb 75%);
+            background-size: 16px 16px;
+            background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+            background-color: #f9fafb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-neutral-950 via-stone-900 to-neutral-950 text-white">
+
+    <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 max-w-sm w-full shadow-2xl text-center space-y-5">
+        <div>
+            <span class="text-[10px] font-extrabold uppercase tracking-widest bg-amber-500/20 text-amber-400 px-3 py-1 rounded-full">
+                Ícono PWA / App Store
+            </span>
+            <h1 class="text-xl font-extrabold mt-2">Menú<span class="text-amber-400">QR</span> Ícono</h1>
+            <p class="text-xs text-stone-400 mt-1">Resolución exacta: <strong>192 × 192 px</strong> (PNG)</p>
+        </div>
+
+        <!-- Contenedor de vista previa del Canvas 192x192 -->
+        <div class="flex flex-col items-center justify-center">
+            <div class="p-4 rounded-3xl checkerboard border-2 border-neutral-700 shadow-inner inline-block">
+                <canvas id="iconCanvas" width="192" height="192" class="rounded-[36px] shadow-md block"></canvas>
+            </div>
+            <span class="text-[11px] text-stone-400 mt-2 font-mono">Archivo: icon-192.png</span>
+        </div>
+
+        <!-- Selector de Fondo (Blanco Sólido o Transparente) -->
+        <div class="bg-neutral-950 p-1 rounded-xl flex items-center border border-neutral-800 text-xs">
+            <button id="btn-bg-white" onclick="setBgMode('white')" class="flex-1 py-2 rounded-lg font-bold bg-amber-500 text-neutral-950 transition-all">
+                Fondo Blanco
+            </button>
+            <button id="btn-bg-transparent" onclick="setBgMode('transparent')" class="flex-1 py-2 rounded-lg font-bold text-stone-400 hover:text-white transition-all">
+                Sin Fondo (PNG)
+            </button>
+        </div>
+
+        <!-- Botón de Descarga Directa -->
+        <button onclick="downloadIcon()" class="w-full bg-gradient-to-r from-orange-600 to-amber-500 hover:from-orange-500 hover:to-amber-400 text-white font-extrabold text-sm py-3.5 px-4 rounded-2xl shadow-lg shadow-orange-600/25 flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Descargar icon-192.png
+        </button>
+
+        <p id="status-msg" class="text-[11px] text-emerald-400 font-semibold opacity-0 transition-opacity duration-300">
+            ¡Descarga iniciada como icon-192.png!
+        </p>
+    </div>
+
+    <script>
+        let bgMode = 'white';
+
+        function setBgMode(mode) {
+            bgMode = mode;
+            const btnWhite = document.getElementById('btn-bg-white');
+            const btnTrans = document.getElementById('btn-bg-transparent');
+
+            if (mode === 'white') {
+                btnWhite.className = 'flex-1 py-2 rounded-lg font-bold bg-amber-500 text-neutral-950 transition-all';
+                btnTrans.className = 'flex-1 py-2 rounded-lg font-bold text-stone-400 hover:text-white transition-all';
+            } else {
+                btnTrans.className = 'flex-1 py-2 rounded-lg font-bold bg-amber-500 text-neutral-950 transition-all';
+                btnWhite.className = 'flex-1 py-2 rounded-lg font-bold text-stone-400 hover:text-white transition-all';
+            }
+            drawLogo192();
+        }
+
+        function drawLogo192() {
+            const canvas = document.getElementById('iconCanvas');
+            const ctx = canvas.getContext('2d');
+            const size = 192;
+
+            ctx.clearRect(0, 0, size, size);
+
+            // 1. Fondo blanco redondeado estilo ícono de app (si está activo)
+            if (bgMode === 'white') {
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.roundRect(0, 0, size, size, 38);
+                ctx.fill();
+            }
+
+            // 2. Degradado Naranja Intenso -> Amarillo Dorado (igual al logo minimalista)
+            const grad = ctx.createLinearGradient(28, 165, 164, 28);
+            grad.addColorStop(0, '#ea580c');   // Naranja profundo
+            grad.addColorStop(0.55, '#f59e0b'); // Ámbar naranja
+            grad.addColorStop(1, '#fbbf24');   // Amarillo dorado
+
+            ctx.strokeStyle = grad;
+            ctx.fillStyle = grad;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // --- ELEMENTO IZQUIERDO: CARPETA DE MENÚ ABIERTA + M + CUBIERTOS ---
+            ctx.lineWidth = 6.5;
+            ctx.beginPath();
+            // Borde izquierdo vertical del menú
+            ctx.moveTo(36, 154);
+            ctx.lineTo(36, 44);
+            // Solapa superior inclinada
+            ctx.lineTo(82, 26);
+            ctx.lineTo(82, 46);
+            // Pliegue frontal del menú
+            ctx.moveTo(36, 44);
+            ctx.lineTo(74, 54);
+            ctx.lineTo(74, 108);
+            ctx.stroke();
+
+            // Tres líneas horizontales de texto dentro del menú
+            ctx.lineWidth = 4.5;
+            ctx.beginPath();
+            ctx.moveTo(46, 63); ctx.lineTo(64, 68);
+            ctx.moveTo(46, 75); ctx.lineTo(64, 80);
+            ctx.moveTo(46, 87); ctx.lineTo(64, 92);
+            ctx.stroke();
+
+            // Letra "M" estilizada que conecta con la Q
+            ctx.lineWidth = 6.5;
+            ctx.beginPath();
+            ctx.moveTo(45, 154);
+            ctx.lineTo(45, 102);
+            ctx.lineTo(69, 118);
+            ctx.lineTo(93, 102);
+            ctx.stroke();
+
+            // Cuchara minimalista dentro de la M (izquierda)
+            ctx.beginPath();
+            ctx.ellipse(57, 127, 4.5, 6.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(57, 133);
+            ctx.lineTo(57, 154);
+            ctx.stroke();
+
+            // Tenedor minimalista dentro de la M (derecha)
+            ctx.lineWidth = 2.6;
+            ctx.beginPath();
+            ctx.moveTo(76, 121); ctx.lineTo(76, 131);
+            ctx.moveTo(80, 121); ctx.lineTo(80, 131);
+            ctx.moveTo(84, 121); ctx.lineTo(84, 131);
+            ctx.moveTo(76, 131); ctx.lineTo(84, 131);
+            ctx.stroke();
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(80, 131);
+            ctx.lineTo(80, 154);
+            ctx.stroke();
+
+            // --- ELEMENTO INFERIOR DERECHO: LETRA "Q" MINIMALISTA ---
+            ctx.lineWidth = 7.5;
+            ctx.beginPath();
+            ctx.arc(124, 126, 26, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Cola diagonal de la Q
+            ctx.beginPath();
+            ctx.moveTo(135, 138);
+            ctx.lineTo(154, 156);
+            ctx.stroke();
+
+            // Base conectora inferior
+            ctx.lineWidth = 6;
+            ctx.beginPath();
+            ctx.moveTo(72, 154);
+            ctx.lineTo(106, 154);
+            ctx.stroke();
+
+            // --- ELEMENTO SUPERIOR DERECHO: CÓDIGO QR GEOMÉTRICO ---
+            const drawFinderPattern = (x, y, s) => {
+                ctx.lineWidth = 4.2;
+                ctx.strokeRect(x, y, s, s);
+                ctx.fillRect(x + 6.5, y + 6.5, s - 13, s - 13);
+            };
+
+            // Tres esquinas de posicionamiento QR
+            drawFinderPattern(92, 34, 23);
+            drawFinderPattern(133, 34, 23);
+            drawFinderPattern(92, 74, 23);
+
+            // Píxeles internos del QR (estéticos y limpios para 192x192)
+            const dots = [
+                [121, 36], [121, 46], [121, 56],
+                [94, 63],  [104, 63], [114, 63], [124, 63], [134, 63], [146, 63],
+                [122, 74], [132, 74], [144, 74], [152, 74],
+                [122, 84], [138, 84], [148, 84],
+                [122, 93], [131, 93], [142, 93], [152, 93]
+            ];
+            dots.forEach(([dx, dy]) => {
+                ctx.fillRect(dx, dy, 6.2, 6.2);
+            });
+        }
+
+        function downloadIcon() {
+            const canvas = document.getElementById('iconCanvas');
+            const link = document.createElement('a');
+            link.download = 'icon-192.png';
+            link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            const msg = document.getElementById('status-msg');
+            msg.classList.remove('opacity-0');
+            setTimeout(() => msg.classList.add('opacity-0'), 3000);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            drawLogo192();
+        });
+    </script>
+</body>
+</html>
